@@ -29,10 +29,13 @@ const origomapillary = function origomapillary(options = {}) {
   let toggledLarge = false;
 
   const dom = Origo.ui.dom;
-  const coverageUrl = 'https://tiles.mapillary.com/maps/vtp/mly1_public/2/{z}/{x}/{y}';
-
   const clientToken = Object.prototype.hasOwnProperty.call(options, 'clientToken') ? options.clientToken : undefined;
+  const mapillaryUrl = Object.prototype.hasOwnProperty.call(options, 'mapillaryUrl') ? options.mapillaryUrl : 'https://tiles.mapillary.com/maps/vtp/mly1_public/2/{z}/{x}/{y}';
   const organizationId = Object.prototype.hasOwnProperty.call(options, 'organizationId') ? options.organizationId : undefined;
+  const declutter = Object.prototype.hasOwnProperty.call(options, 'declutter') ? options.declutter : true;
+  const mapillaryLayerName = Object.prototype.hasOwnProperty.call(options, 'mapillaryLayerName') ? options.mapillaryLayerName : 'Mapillary';
+  const normalLegendLabel = Object.prototype.hasOwnProperty.call(options, 'normalLegendLabel') ? options.normalLegendLabel : 'Vanliga bilder';
+  const panoLegendLabel = Object.prototype.hasOwnProperty.call(options, 'panoLegendLabel') ? options.panoLegendLabel : '360 bilder';
   const selectionStyleColor = Object.prototype.hasOwnProperty.call(options, 'selectionStyleColor') ? options.selectionStyleColor : '#0099ff';
   const normalStyleColor = Object.prototype.hasOwnProperty.call(options, 'normalStyleColor') ? options.normalStyleColor : '#5cb7ff';
   const panoStyleColor = Object.prototype.hasOwnProperty.call(options, 'panoStyleColor') ? options.panoStyleColor : '#ff8927';
@@ -99,6 +102,31 @@ const origomapillary = function origomapillary(options = {}) {
     })
   });
 
+  const legendStyle = [
+    [
+      {
+        label: normalLegendLabel,
+        circle: {
+          radius: 10,
+          fill: {
+            color: normalStyleColor
+          }
+        }
+      }
+    ],
+    [
+      {
+        label: panoLegendLabel,
+        circle: {
+          radius: 10,
+          fill: {
+            color: panoStyleColor
+          }
+        }
+      }
+    ]
+  ];
+
   async function setMarker() {
     const position = await mapillaryViewer.getPosition();
     const bearing = await mapillaryViewer.getBearing();
@@ -121,6 +149,9 @@ const origomapillary = function origomapillary(options = {}) {
     if (clientToken) {
       map.addLayer(coverageLayer);
       map.addLayer(selectionLayer);
+
+      viewer.addStyle('mapillary-legend', legendStyle);
+      coverageLayer.set('styleName', 'mapillary-legend');
     }
   }
 
@@ -291,10 +322,10 @@ const origomapillary = function origomapillary(options = {}) {
         });
 
         coverageLayer = new VectorTileLayer({
-          declutter: false,
-          title: 'Mapillary - Coverage',
+          declutter,
+          title: mapillaryLayerName,
           source: new VectorTileSource({
-            url: `${coverageUrl}?access_token=${clientToken}`,
+            url: `${mapillaryUrl}?access_token=${clientToken}`,
             format: new MVT()
           })
         });
@@ -318,10 +349,6 @@ const origomapillary = function origomapillary(options = {}) {
           accessToken: clientToken,
           container: document.getElementById(filterBoxContent.getId())
         });
-
-        if (organizationId) {
-          mapillaryViewer.setFilter(['==', 'ownerId', organizationId]);
-        }
 
         defaultStyles = coverageLayer.getStyleFunction()();
         coverageLayer.setStyle(styleFunction);
